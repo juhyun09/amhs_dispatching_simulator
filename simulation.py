@@ -1,7 +1,6 @@
 """
 AMHS 시뮬레이터 - Step 1: 최소 동작 예시
 
-<<<<<<< HEAD
 노드 3개, 차량 1대, job 1개를 하드코딩해서
 "시뮬레이션이 한 바퀴 도는지"만 확인하는 것이 이 파일의 유일한 목표입니다.
 일반화(그래프 파일 읽기, job 자동 생성, 차량 여러 대, dispatcher)는 다음 단계에서 합니다.
@@ -10,7 +9,7 @@ AMHS 시뮬레이터 - Step 1: 최소 동작 예시
 import simpy
 
 # ---- 1. Rail Network (하드코딩된 최소 그래프) ----
-# 노드: STOCKER(시작점), TOOL_A, TOOL_B
+# 노드: STOCKER(시작점), TOOL_A, TOOL_B, TOOL_C, TOOL_D, TOOL_E, TOOL_F, TOOL_G
 # 값은 편의상 "이동 시간(분)"으로 취급합니다.
 DISTANCES = {
     ("STOCKER", "TOOL_A"): 3,
@@ -19,6 +18,19 @@ DISTANCES = {
     ("TOOL_B", "STOCKER"): 5,
     ("TOOL_A", "TOOL_B"): 4,
     ("TOOL_B", "TOOL_A"): 4,
+    ("TOOL_C", "TOOL_B"): 2,
+    ("TOOL_B", "TOOL_C"): 2,
+    ("TOOL_A", "TOOL_C"): 1,
+    ("TOOL_C", "TOOL_A"): 1,
+    ("TOOL_C", "TOOL_D"): 3,
+    ("TOOL_D", "TOOL_C"): 3,   
+    ("TOOL_D", "TOOL_E"): 2,
+    ("TOOL_E", "TOOL_D"): 2,
+    ("TOOL_E", "TOOL_F"): 4,
+    ("TOOL_F", "TOOL_E"): 4,
+    ("TOOL_F", "TOOL_G"): 3,
+    ("TOOL_G", "TOOL_F"): 3,
+    ("STOCKER", "TOOL_C"): 8
 }
 
 
@@ -27,13 +39,18 @@ def travel_time(a, b):
 
 
 # ---- 2. Job (하드코딩된 요청 1건) ----
-job = {
-    "id": "JOB-001",
-    "pickup": "TOOL_A",
-    "dropoff": "TOOL_B",
-}
-
-
+JOBS = [
+    {
+        "id": "JOB-001",
+        "pickup": "TOOL_A",
+        "dropoff": "TOOL_B",
+    },
+    {
+        "id": "JOB-002",
+        "pickup": "TOOL_C",
+        "dropoff": "TOOL_D",
+    }
+]
 # ---- 3. Vehicle (상태 머신을 SimPy 프로세스로 표현) ----
 def vehicle_process(env, name, start_node, job):
     """
@@ -67,10 +84,14 @@ def vehicle_process(env, name, start_node, job):
     print(f"[t={env.now:>5.1f}] {name}: IDLE at {current_node} "
           f"({job['id']} 완료)")
 
+def run_simulation(env, jobs):
+    for i, job in enumerate(jobs):
+        vehicle_process_name = f"OHT-{i+1}"
+        env.process(vehicle_process(env, vehicle_process_name, "STOCKER", job))
+    env.run()
 
 # ---- 4. 시뮬레이션 실행 ----
 if __name__ == "__main__":
     env = simpy.Environment()
-    env.process(vehicle_process(env, "OHT-1", "STOCKER", job))
-    env.run()
+    run_simulation(env, JOBS)
     print("\n시뮬레이션 종료.")
